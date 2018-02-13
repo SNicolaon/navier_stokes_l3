@@ -11,19 +11,19 @@ import numpy as np
 import imageio
 
 #parametre:
-t=10 #temps
-lx=10 #largeur
-ly=10 #hauteur
+t=300 #temps
+lx=2 #largeur
+ly=2 #hauteur
 
 rho=1
 g=9.81
 nu = 0.1
 
 #discretisation :
-nj=50 #largeur
-ni=50 #hauteur
-dt=0.001  #pas de temps
-lapla=50 #iteration du laplacien (calcul pression)
+nj=8 #largeur
+ni=8 #hauteur
+dt=0.05  #pas de temps
+lapla=20 #iteration du laplacien (calcul pression)
 
 #intervalles:
 dx= lx / (nj-1)
@@ -35,12 +35,15 @@ u = np.zeros([ni,nj]) #vitesse sur x
 v = np.zeros([ni,nj]) # sur y
 p = np.zeros([ni,nj]) #pression
 
-f = np.zeros([ni,nj]) #calcul de poisson
 
+
+"""
 #affichage:
 U = np.zeros([ni,nj,it]) #les U a tout les temps
 V = np.zeros([ni,nj,it]) # les V
 P = np.zeros([ni,nj,it]) # les P
+
+"""
 
 #fonctions:
 
@@ -54,26 +57,61 @@ def con_lim(u,v,p,im):
 
 """
 
+
 def calcul_p(u,v,p): #p(t) tq div( v(t) ) =0 
-    pn = np.empty_like(p)
+    pn = np.zeros_like(p)
+    dd=2*(dx**2 + dy**2)
+    pn=p
     for j in range(1,nj-1): #on connait les CL des 2cotes 
         for i in range(1,ni-1):
-            pn[i,j]= ((((p[i+1,j] + p[i-1,j])*dy**2 + (p[i,j+1] + p[i,j-1])*dx**2) / (2*(dx**2 + dy**2)) ) - ((rho* dx**2 * dy**2 )/ 2(dx**2 + dy**2))*( (((u[i+1,j]-u[i-1,j])/(2*dx)) + ((v[i,j+1]-v[i,j-1])/(2*dy)))/dt -  ((u[i+1,j]-u[i-1,j])/(2*dx))**2 - ((v[i,j+1]-v[i,j-1])/(2*dy))**2  - (1/(2*dx*dy))*(u[i,j+1]-u[i,j-1])*(v[i+1,j]-v[i-1,j])))
-    p = pn.copy()
-    return(p)
+            
+            pi=p[i+1,j]-p[i-1,j]
+            pj=p[i,j+1]-p[i,j-1]
+            
+            ui=u[i+1,j] + u[i-1,j]
+            uj=u[i,j+1] + u[i,j-1]
+            
+            vi=v[i+1,j] + v[i-1,j]
+            vj=v[i,j+1] + v[i,j-1]
+            
+            pn[i,j]= ((pi * (dy**2) + pj * (dx**2))/dd)  +  (rho/dd)* (dx**2) * (dy**2) * (    ((ui/(2*dx) + vj/(2*dy))/dt)  -  (ui**2 /(4* (dx**2))) -   (vj**2 /(4* (dy**2)))   - ( (uj*vi)/(2*dy*dx) )               )
+    
+    
+    #CL:
+    
+    pn[0,:]=0.
+    pn[ni-1,:]=pn[ni-2,:]
+    pn[:,0]=pn[:,1]
+    pn[:,nj-1]=pn[:,nj-2]
+    
+    return(pn)
 
 
 
 def calcul_v(u,v,p): #calcul u,v (t+1)
-    un= np.empty_like(u)
-    vn= np.empty_like(v)
+    un= np.zeros_like(u)
+    un=u
+    vn= np.zeros_like(v)
+    vn=v
     for j in range(1,nj-1):
         for i in range(1,ni-1):
             un[i,j]=u[i,j]- v[i,j]*u[i,j]*(dt**2 /(dy*dx))* (u[i,j] + u[i-1,j])*(u[i,j] + u[i,j-1]) - (dt / (2*rho*dx)) *(p[i+1,j] - p[i-1,j]) + nu*dt*(((u[i+1,j] -2* u[i,j] + u[i-1,j]  )/dx**2)  + ( ( u[i,j+1] -2* u[i,j] + u[i,j-1]     )/dy**2))
             vn[i,j]=v[i,j]- v[i,j]*u[i,j]*(dt**2 /(dy*dx))* (v[i,j] + v[i-1,j])*(v[i,j] + v[i,j-1]) - (dt / (2*rho*dy)) *(p[i,j+1] - p[i,j-1]) + nu*dt*(((v[i+1,j] -2* v[i,j] + v[i-1,j]  )/dx**2)  + ( ( v[i,j+1] -2* v[i,j] + v[i,j-1]     )/dy**2))
-    u = un.copy()
-    v = vn.copy()
-    return(u,v)
+    
+    #CL:
+    un[0,:]=1.
+    vn[0,:]=0.
+    
+    un[ni-1,:]=0.
+    vn[ni-1,:]=0.
+    
+    un[:,0]=0.
+    vn[:,0]=0.
+    
+    un[:,nj-1]=0.
+    vn[:,nj-1]=0.
+    
+    return(un,vn)
 
 """
 #conditions limites:
@@ -111,11 +149,9 @@ for ti in range(it):
     
     u,v=calcul_v(u,v,p)
     
-    U[:,:,ti]=u[:,:]
-    V[:,:,ti]=v[:,:]
-    P[:,:,ti]=p[:,:]
 
 
+print(1)
 
 
 
