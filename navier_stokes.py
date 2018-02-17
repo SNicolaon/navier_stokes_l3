@@ -11,7 +11,7 @@ import numpy as np
 import imageio
 
 #parametre:
-t=300 #temps
+t=50 #temps
 lx=2 #largeur
 ly=2 #hauteur
 
@@ -20,8 +20,8 @@ g=9.81
 nu = 0.1
 
 #discretisation :
-nj=8 #largeur
-ni=8 #hauteur
+nj=10 #largeur
+ni=10 #hauteur
 dt=0.05  #pas de temps
 lapla=20 #iteration du laplacien (calcul pression)
 
@@ -61,20 +61,20 @@ def con_lim(u,v,p,im):
 def calcul_p(u,v,p): #p(t) tq div( v(t) ) =0 
     pn = np.zeros_like(p)
     dd=2*(dx**2 + dy**2)
-    pn=p
+    pn=p.copy()
     for j in range(1,nj-1): #on connait les CL des 2cotes 
         for i in range(1,ni-1):
             
-            pi=p[i+1,j]-p[i-1,j]
-            pj=p[i,j+1]-p[i,j-1]
+            pi=p[i+1,j]+p[i-1,j]
+            pj=p[i,j+1]+p[i,j-1]
             
-            ui=u[i+1,j] + u[i-1,j]
-            uj=u[i,j+1] + u[i,j-1]
+            ui=u[i+1,j] - u[i-1,j]
+            uj=u[i,j+1] - u[i,j-1]
             
-            vi=v[i+1,j] + v[i-1,j]
-            vj=v[i,j+1] + v[i,j-1]
+            vi=v[i+1,j] - v[i-1,j]
+            vj=v[i,j+1] - v[i,j-1]
             
-            pn[i,j]= ((pi * (dy**2) + pj * (dx**2))/dd)  +  (rho/dd)* (dx**2) * (dy**2) * (    ((ui/(2*dx) + vj/(2*dy))/dt)  -  (ui**2 /(4* (dx**2))) -   (vj**2 /(4* (dy**2)))   - ( (uj*vi)/(2*dy*dx) )               )
+            pn[i,j]= ((pi * (dy**2) + pj * (dx**2))/dd)  -  (rho/dd)* (dx**2) * (dy**2) * (    ((ui/(2*dx) + vj/(2*dy))/dt)  -  (ui**2 /(4* (dx**2))) -   (vj**2 /(4* (dy**2)))   - ( (uj*vi)/(2*dy*dx) )               )
     
     
     #CL:
@@ -90,9 +90,9 @@ def calcul_p(u,v,p): #p(t) tq div( v(t) ) =0
 
 def calcul_v(u,v,p): #calcul u,v (t+1)
     un= np.zeros_like(u)
-    un=u
+    un=u.copy()
     vn= np.zeros_like(v)
-    vn=v
+    vn=v.copy()
     for j in range(1,nj-1):
         for i in range(1,ni-1):
             un[i,j]=u[i,j]- v[i,j]*u[i,j]*(dt**2 /(dy*dx))* (u[i,j] + u[i-1,j])*(u[i,j] + u[i,j-1]) - (dt / (2*rho*dx)) *(p[i+1,j] - p[i-1,j]) + nu*dt*(((u[i+1,j] -2* u[i,j] + u[i-1,j]  )/dx**2)  + ( ( u[i,j+1] -2* u[i,j] + u[i,j-1]     )/dy**2))
@@ -152,8 +152,6 @@ for ti in range(it):
 
 
 print(1)
-
-
 
 
 
