@@ -11,19 +11,19 @@ import numpy as np
 import imageio
 
 #parametre:
-t=1 #temps
-lx=2 #largeur
-ly=2 #hauteur
+t=2.0 #temps
+lx=4 #largeur
+ly=4 #hauteur
 
 rho=1
 g=9.81
 nu = 0.1
 
 #discretisation :
-nj=31 #largeur
-ni=31 #hauteur
-dt=0.008  #pas de temps
-lapla=30 #iteration du laplacien (calcul pression)
+nj=41 #largeur
+ni=41 #hauteur
+dt=0.001  #pas de temps
+lapla=50 #iteration du laplacien (calcul pression)
 
 #intervalles:
 dx= lx / (nj-1)
@@ -42,8 +42,8 @@ p = np.zeros([ni,nj]) #pression
 #fonctions:
 
 """
-def con_lim(u,v,p,im):
-    if im[i,j]:
+def cond_lim(u,v,p,im):
+    if (im[i,j]== blabla) :
         u[i,j]= 0
         v[i,j]= 0
 
@@ -54,22 +54,13 @@ def con_lim(u,v,p,im):
 
 def calcul_p(u,v,p): #p(t) tq div( v(t) ) =0 
     pn = np.zeros_like(p)
-    dd=2*(dx**2 + dy**2)
-    pn=p.copy()
-    for j in range(1,nj-1): #on connait les CL des 2cotes 
-        for i in range(1,ni-1):
-            
-            pi=p[i+1,j]+p[i-1,j]
-            pj=p[i,j+1]+p[i,j-1]
-            
-            ui=u[i+1,j] - u[i-1,j]
-            uj=u[i,j+1] - u[i,j-1]
-            
-            vi=v[i+1,j] - v[i-1,j]
-            vj=v[i,j+1] - v[i,j-1]
-            
-            pn[i,j]= ((pi * (dy**2) + pj * (dx**2))/dd)  -  (rho/dd)* (dx**2) * (dy**2) * (    ((ui/(2*dx) + vj/(2*dy))/dt)  -  (ui**2 /(4* (dx**2))) -   (vj**2 /(4* (dy**2)))   - ( (uj*vi)/(2*dy*dx) )               )
     
+    pn=p.copy()
+    
+    pn[1:-1, 1:-1] = (((p[1:-1, 2:] + p[1:-1, 0:-2]) * dy**2 + (p[2:, 1:-1] + p[0:-2, 1:-1]) * dx**2) / (2 * (dx**2 + dy**2)) - \
+                          dx**2 * dy**2 / (2 * (dx**2 + dy**2)) * (  (rho * (1 / dt * ((u[1:-1, 2:] - u[1:-1, 0:-2]) / (2 * dx) + (v[2:, 1:-1] - v[0:-2, 1:-1]) / (2 * dy)) -  \
+                    ((u[1:-1, 2:] - u[1:-1, 0:-2]) / (2 * dx))**2 - 2 * ((u[2:, 1:-1] - u[0:-2, 1:-1]) / (2 * dy) * (v[1:-1, 2:] - v[1:-1, 0:-2]) / (2 * dx))- \
+                          ((v[2:, 1:-1] - v[0:-2, 1:-1]) / (2 * dy))**2)) ))
     
     #CL:
     
@@ -87,10 +78,15 @@ def calcul_v(u,v,p): #calcul u,v (t+1)
     un=u.copy()
     vn= np.zeros_like(v)
     vn=v.copy()
-    for j in range(1,nj-1):
-        for i in range(1,ni-1):
-            un[i,j]=u[i,j]- v[i,j]*u[i,j]*(dt**2 /(dy*dx))* (u[i,j] + u[i-1,j])*(u[i,j] + u[i,j-1]) - (dt / (2*rho*dx)) *(p[i+1,j] - p[i-1,j]) + nu*dt*(((u[i+1,j] -2* u[i,j] + u[i-1,j]  )/dx**2)  + ( ( u[i,j+1] -2* u[i,j] + u[i,j-1]     )/dy**2))
-            vn[i,j]=v[i,j]- v[i,j]*u[i,j]*(dt**2 /(dy*dx))* (v[i,j] + v[i-1,j])*(v[i,j] + v[i,j-1]) - (dt / (2*rho*dy)) *(p[i,j+1] - p[i,j-1]) + nu*dt*(((v[i+1,j] -2* v[i,j] + v[i-1,j]  )/dx**2)  + ( ( v[i,j+1] -2* v[i,j] + v[i,j-1]     )/dy**2))
+    
+    
+    un[1:-1, 1:-1] = (u[1:-1, 1:-1]- u[1:-1, 1:-1] * dt / dx * (u[1:-1, 1:-1] - u[1:-1, 0:-2]) - v[1:-1, 1:-1] * dt / dy *(u[1:-1, 1:-1] - u[0:-2, 1:-1]) - \
+                         dt / (2 * rho * dx) * (p[1:-1, 2:] - p[1:-1, 0:-2]) + nu * (dt / dx**2 * (u[1:-1, 2:] - 2 * u[1:-1, 1:-1] + u[1:-1, 0:-2]) + \
+                         dt / dy**2 * (u[2:, 1:-1] - 2 * u[1:-1, 1:-1] + u[0:-2, 1:-1])))
+    
+    vn[1:-1,1:-1] = (v[1:-1, 1:-1] - u[1:-1, 1:-1] * dt / dx * (v[1:-1, 1:-1] - v[1:-1, 0:-2]) - v[1:-1, 1:-1] * dt / dy *(v[1:-1, 1:-1] - v[0:-2, 1:-1]) - \
+                        dt / (2 * rho * dy) * (p[2:, 1:-1] - p[0:-2, 1:-1]) + nu * (dt / dx**2 * (v[1:-1, 2:] - 2 * v[1:-1, 1:-1] + v[1:-1, 0:-2]) + \
+                        dt / dy**2 * (v[2:, 1:-1] - 2 * v[1:-1, 1:-1] + v[0:-2, 1:-1])))
     
     #CL:
     un[ni-1,:]=1.
@@ -105,26 +101,19 @@ def calcul_v(u,v,p): #calcul u,v (t+1)
     un[:,nj-1]=0.
     vn[:,nj-1]=0.
     
+    un[ni-1,:]=1.
     return(un,vn)
+
 
 """
 #conditions limites:
 im = imageio.imread('profil.png') #importe l'image en forme de tableau
 print(im.shape)
 print(im)
+
+cond_lim()
 """
 
-
-
-
-
-"""
-u[1:] - u[0:-1]
-
-{chaque case de u a partir de 1} - {chaque case de u de 0 a taille(u)-1 }
-
-optimise le temps de calcul (genre de 1s pour un calcul simple)
-"""
 
 
 
@@ -141,14 +130,14 @@ for ti in range(it):
 print(1)
 
 #affichage:
+fig = plt.figure()
 
-
-x = np.linspace(0, 2, nj)
-y = np.linspace(0, 2, ni)
+x = np.linspace(0, lx, nj)
+y = np.linspace(0, ly, ni)
 X, Y = np.meshgrid(x, y)
 
 plt.quiver(X,Y, u, v) 
 
-#plt.contourf(X, Y, p)  
-#plt.colorbar()
+plt.contourf(X, Y, p, alpha=0.7)  
+plt.colorbar()
 
