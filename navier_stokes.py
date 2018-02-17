@@ -11,7 +11,7 @@ import numpy as np
 import imageio
 
 #parametre:
-t=50 #temps
+t=1 #temps
 lx=2 #largeur
 ly=2 #hauteur
 
@@ -20,10 +20,10 @@ g=9.81
 nu = 0.1
 
 #discretisation :
-nj=10 #largeur
-ni=10 #hauteur
-dt=0.05  #pas de temps
-lapla=20 #iteration du laplacien (calcul pression)
+nj=31 #largeur
+ni=31 #hauteur
+dt=0.008  #pas de temps
+lapla=30 #iteration du laplacien (calcul pression)
 
 #intervalles:
 dx= lx / (nj-1)
@@ -37,13 +37,7 @@ p = np.zeros([ni,nj]) #pression
 
 
 
-"""
-#affichage:
-U = np.zeros([ni,nj,it]) #les U a tout les temps
-V = np.zeros([ni,nj,it]) # les V
-P = np.zeros([ni,nj,it]) # les P
 
-"""
 
 #fonctions:
 
@@ -79,8 +73,8 @@ def calcul_p(u,v,p): #p(t) tq div( v(t) ) =0
     
     #CL:
     
-    pn[0,:]=0.
-    pn[ni-1,:]=pn[ni-2,:]
+    pn[ni-1,:]=0.
+    pn[0,:]=pn[1,:]
     pn[:,0]=pn[:,1]
     pn[:,nj-1]=pn[:,nj-2]
     
@@ -99,10 +93,10 @@ def calcul_v(u,v,p): #calcul u,v (t+1)
             vn[i,j]=v[i,j]- v[i,j]*u[i,j]*(dt**2 /(dy*dx))* (v[i,j] + v[i-1,j])*(v[i,j] + v[i,j-1]) - (dt / (2*rho*dy)) *(p[i,j+1] - p[i,j-1]) + nu*dt*(((v[i+1,j] -2* v[i,j] + v[i-1,j]  )/dx**2)  + ( ( v[i,j+1] -2* v[i,j] + v[i,j-1]     )/dy**2))
     
     #CL:
-    un[0,:]=1.
+    un[ni-1,:]=1.
     vn[0,:]=0.
     
-    un[ni-1,:]=0.
+    un[0,:]=0.
     vn[ni-1,:]=0.
     
     un[:,0]=0.
@@ -120,13 +114,6 @@ print(im.shape)
 print(im)
 """
 
-"""
-#grid:
-x = np.linspace(0, lx, nj)
-y = np.linspace(0, ly, ni)
-X, Y = np.meshgrid(x, y)
-
-"""
 
 
 
@@ -153,5 +140,15 @@ for ti in range(it):
 
 print(1)
 
+#affichage:
 
+
+x = np.linspace(0, 2, nj)
+y = np.linspace(0, 2, ni)
+X, Y = np.meshgrid(x, y)
+
+plt.quiver(X,Y, u, v) 
+
+#plt.contourf(X, Y, p)  
+#plt.colorbar()
 
